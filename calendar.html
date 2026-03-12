@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOTEL DEOMALI | Availability</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        #calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; max-width: 400px; margin: 20px auto; }
+        .day { padding: 10px; border: 1px solid #ccc; text-align: center; }
+        .booked { background-color: #ffcccc; color: #cc0000; }
+        .available { background-color: #ccffcc; color: #006600; }
+    </style>
+</head>
+<body>
+
+    <section id="availability-calendar">
+        <h2>Room Availability Calendar</h2>
+        <div id="calendar"></div>
+        <div id="month-name" style="text-align:center; font-weight:bold; margin-top: 10px;"></div>
+    </section>
+
+    <script>
+        const supabase = supabase.createClient('https://tuyxkirgobnvacmjilsz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1eXhraXJnb2JudmFjbWppbHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMzQ5MDgsImV4cCI6MjA4ODgxMDkwOH0.2WU369DWbHlcRhPtF4X8jWT4cQw2mGP8JPb0KVlNNq4');
+
+        async function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            document.getElementById('month-name').innerText = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            // Fetch bookings
+            const { data: bookings } = await supabase.from('bookings').select('check_in, check_out');
+            
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            calendar.innerHTML = '';
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                const isBooked = bookings.some(b => dateStr >= b.check_in && dateStr < b.check_out);
+                
+                const dayEl = document.createElement('div');
+                dayEl.className = `day ${isBooked ? 'booked' : 'available'}`;
+                dayEl.innerText = i;
+                calendar.appendChild(dayEl);
+            }
+        }
+        renderCalendar();
+    </script>
+</body>
+</html>

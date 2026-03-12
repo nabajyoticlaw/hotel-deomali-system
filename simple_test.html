@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Booking Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <input type="date" id="checkin">
+    <input type="date" id="checkout">
+    <button id="findRoomsBtn" onclick="testFunction()">Test Button</button>
+    <div id="status"></div>
+
+    <script>
+        function testFunction() {
+            alert("Button Clicked! If you see this, the button works.");
+            document.getElementById('status').innerText = "Script is active.";
+        }
+    </script>
+</body>
+</html>

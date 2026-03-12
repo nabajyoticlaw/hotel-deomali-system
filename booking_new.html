@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOTEL DEOMALI | Book</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .step { display: none; }
+        .step.active { display: block; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .day { padding: 5px; border: 1px solid #ddd; text-align: center; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<section id="booking">
+    <h2>Book Your Room</h2>
+    
+    <!-- Real-time Availability Calendar -->
+    <div id="calendar-wrapper">
+        <h3>Room Availability</h3>
+        <div id="calendar-grid" class="calendar-grid"></div>
+    </div>
+
+    <!-- Step 1: Dates -->
+    <div id="step-1" class="step active">
+        <label>Check-in:</label> <input type="date" id="checkin">
+        <label>Check-out:</label> <input type="date" id="checkout">
+        <button id="checkBtn">Check Availability</button>
+    </div>
+
+    <!-- Step 2: Room Selection -->
+    <div id="step-2" class="step">
+        <h3>Available Rooms:</h3>
+        <div id="rooms-list"></div>
+        <button onclick="changeStep(1)">Back</button>
+        <button id="proceedBtn">Continue to Guest Details</button>
+    </div>
+
+    <!-- Step 3: Guest Details -->
+    <div id="step-3" class="step">
+        <input type="text" id="guestName" placeholder="Full Name">
+        <input type="number" id="guestCount" placeholder="Persons (max 4)" max="4">
+        <input type="number" id="guestAge" placeholder="Lead Guest Age">
+        <input type="tel" id="whatsapp" placeholder="WhatsApp Number">
+        <textarea id="requests" placeholder="Extra requests"></textarea>
+        <button onclick="changeStep(2)">Back</button>
+        <button id="confirmBtn">Confirm Booking</button>
+    </div>
+
+    <div id="status"></div>
+</section>
+
+<script>
+    const supabase = supabase.createClient('https://tuyxkirgobnvacmjilsz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1eXhraXJnb2JudmFjbWppbHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMzQ5MDgsImV4cCI6MjA4ODgxMDkwOH0.2WU369DWbHlcRhPtF4X8jWT4cQw2mGP8JPb0KVlNNq4');
+
+    function changeStep(n) {
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById('step-' + n).classList.add('active');
+    }
+
+    // Auto-fill checkout
+    document.getElementById('checkin').onchange = (e) => {
+        const d = new Date(e.target.value);
+        d.setDate(d.getDate() + 1);
+        document.getElementById('checkout').value = d.toISOString().split('T')[0];
+    };
+
+    // Render Calendar with Gradient
+    async function initCalendar() {
+        const grid = document.getElementById('calendar-grid');
+        const { data: bookings } = await supabase.from('bookings').select('check_in, check_out');
+        // Total rooms = 8. Calculate occupancy per day.
+        for(let i=1; i<=30; i++) {
+            const dateStr = `2026-03-${String(i).padStart(2, '0')}`;
+            const occupied = bookings.filter(b => dateStr >= b.check_in && dateStr < b.check_out).length;
+            const percentage = (occupied / 8) * 100;
+            const div = document.createElement('div');
+            div.className = 'day';
+            div.style.background = `linear-gradient(to right, #ffcccc ${percentage}%, #ccffcc ${percentage}%)`;
+            div.innerText = i;
+            grid.appendChild(div);
+        }
+    }
+    initCalendar();
+
+    // Check Availability
+    document.getElementById('findRoomsBtn').onclick = async () => {
+        const start = document.getElementById('checkin').value;
+        const end = document.getElementById('checkout').value;
+        const { data: bookings } = await supabase.from('bookings').select('room_id').or(`and(check_in.lte.${end},check_out.gte.${start})`);
+        const booked = bookings.map(b => b.room_id);
+        const { data: allRooms } = await supabase.from('rooms').select('*');
+        
+        document.getElementById('rooms-list').innerHTML = '';
+        allRooms.filter(r => !booked.includes(r.id)).forEach(room => {
+            const btn = document.createElement('div');
+            btn.className = 'room-card';
+            btn.innerText = `Room ${room.id} (${room.type})`;
+            btn.onclick = () => { btn.classList.toggle('selected'); /* store ID */ };
+            document.getElementById('rooms-list').appendChild(btn);
+        });
+        changeStep(2);
+    };
+
+    document.getElementById('confirmBtn').onclick = async () => {
+        // Submit logic...
+        alert("Booking pending. Please proceed with payment via QR/UPI to confirm.");
+        changeStep(1);
+    };
+</script>
+</body>
+</html>

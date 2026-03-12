@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Hotel Deomali</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { padding: 10px; text-align: left; max-width: 100%; margin: auto; font-size: 14px; }
+        .admin-card { background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #d4af37; overflow-x: auto; }
+        h2 { color: #d4af37; font-size: 1.2rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .editable { background: #fffaf0; border: 1px dashed #d4af37; cursor: pointer; min-width: 50px; }
+        .btn-save { background: #d4af37; color: #fff; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 0.8rem; }
+        @media (max-width: 600px) {
+            body { padding: 5px; }
+            th, td { padding: 5px; }
+            .btn-save { padding: 4px 8px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+    
+    <div class="admin-card">
+        <h2>Bookings</h2>
+        <input type="text" id="bookingSearch" placeholder="Search by name, ID, date, phone, or status..." style="width: 100%; padding: 8px; margin-bottom: 10px;" onkeyup="filterBookings()">
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Guest</th><th>Check-in</th><th>Check-out</th><th>Room</th><th>Phone</th><th>Price</th><th>Disc</th><th>Adv</th><th>Extra</th><th>Status</th><th>Action</th></tr>
+            </thead>
+            <tbody id="bookingsBody"></tbody>
+        </table>
+    </div>
+
+    <div class="admin-card">
+        <h2>Website Content</h2>
+        <table>
+            <thead>
+                <tr><th>Key</th><th>Value</th><th>Action</th></tr>
+            </thead>
+            <tbody id="settingsBody"></tbody>
+        </table>
+        <div style="margin-top:15px;">
+            <input type="text" id="newSettingKey" placeholder="Key (e.g. gst_number)" style="width:20%">
+            <input type="text" id="newSettingValue" placeholder="Value" style="width:30%">
+            <button class="btn-save" onclick="addSetting()">Add Setting</button>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <h2>Manage Rooms</h2>
+        <table>
+            <thead>
+                <tr><th>Room ID</th><th>Type</th><th>Price</th><th>Amenities</th><th>Action</th></tr>
+            </thead>
+            <tbody id="roomsBody"></tbody>
+        </table>
+        <div style="margin-top:15px;">
+            <input type="text" id="newRoomId" placeholder="ID" style="width:10%">
+            <input type="text" id="newRoomType" placeholder="Type" style="width:20%">
+            <input type="number" id="newRoomPrice" placeholder="Price" style="width:15%">
+            <input type="text" id="newRoomAmenities" placeholder="Amenities" style="width:30%">
+            <button class="btn-save" onclick="addRoom()">Add Room</button>
+        </div>
+    </div>
+
+    <script>
+        const _supabase = window.supabase.createClient('https://tuyxkirgobnvacmjilsz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1eXhraXJnb2JudmFjbWppbHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMzQ5MDgsImV4cCI6MjA4ODgxMDkwOH0.2WU369DWbHlcRhPtF4X8jWT4cQw2mGP8JPb0KVlNNq4');
+
+        async function loadAdminData() {
+            const { data: settings } = await _supabase.from('settings').select('*');
+            const gst_percent = settings.find(s => s.key === 'gst_percent')?.value || 0;
+            const gst_number = settings.find(s => s.key === 'gst_number')?.value || '';
+            const sbody = document.getElementById('settingsBody');
+            sbody.innerHTML = '';
+            settings.forEach(s => {
+                sbody.innerHTML += `<tr>
+                    <td>${s.key}</td>
+                    <td class="editable" contenteditable="true" id="val-${s.id}">${s.value}</td>
+                    <td><button class="btn-save" onclick="saveSetting(${s.id})">Save</button></td>
+                </tr>`;
+            });
+
+            const { data: bookings } = await _supabase.from('bookings').select('*');
+            window.allBookings = bookings;
+            window.gst_percent = gst_percent;
+            window.gst_number = gst_number;
+            renderBookings(bookings);
+
+            const { data: rooms } = await _supabase.from('rooms').select('*');
+            const rbody = document.getElementById('roomsBody');
+            rbody.innerHTML = '';
+            rooms.forEach(r => {
+                rbody.innerHTML += `<tr>
+                    <td>${r.id}</td>
+                    <td class="editable" contenteditable="true" id="rtype-${r.id}">${r.type}</td>
+                    <td class="editable" contenteditable="true" id="rprice-${r.id}">${r.price || '0'}</td>
+                    <td class="editable" contenteditable="true" id="ramenities-${r.id}">${r.amenities || ''}</td>
+                    <td>
+                        <button class="btn-save" onclick="saveRoom(${r.id})">Save</button>
+                        <button onclick="deleteRoom(${r.id})" style="background:red; color:white; border:none; padding:5px;">Delete</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function renderBookings(bookings) {
+            const tbody = document.getElementById('bookingsBody');
+            tbody.innerHTML = '';
+            bookings.forEach(b => {
+                tbody.innerHTML += `<tr>
+                    <td>${b.booking_id || ''}</td>
+                    <td class="editable" contenteditable="true" id="guest-${b.id}">${b.guest_name || ''}</td>
+                    <td class="editable" contenteditable="true" id="checkin-${b.id}">${b.check_in || ''}</td>
+                    <td class="editable" contenteditable="true" id="checkout-${b.id}">${b.check_out || ''}</td>
+                    <td class="editable" contenteditable="true" id="room-${b.id}">${b.room_id || ''}</td>
+                    <td class="editable" contenteditable="true" id="whatsapp-${b.id}">${b.whatsapp || ''}</td>
+                    <td class="editable" contenteditable="true" id="price-${b.id}">${b.price || '0'}</td>
+                    <td class="editable" contenteditable="true" id="discount-${b.id}">${b.discount || '0'}</td>
+                    <td class="editable" contenteditable="true" id="advance-${b.id}">${b.advance || '0'}</td>
+                    <td class="editable" contenteditable="true" id="extra-${b.id}">${b.requests || ''}</td>
+                    <td class="editable" contenteditable="true" id="status-${b.id}" style="color:${b.booking_status === 'Confirmed' ? 'green' : b.booking_status === 'Pending' ? 'orange' : b.booking_status === 'Cancelled' ? 'red' : b.booking_status === 'Complete' ? 'blue' : 'black'}; font-weight:bold;">${b.booking_status || 'Pending'}</td>
+                    <td>
+                        <button class="btn-save" onclick="saveBooking(${b.id})">Save</button>
+                        <button onclick="deleteBooking(${b.id})" style="background:red; color:white; border:none; padding:5px;">Delete</button>
+                        <button onclick="printInvoice(${b.id})" style="background:green; color:white; border:none; padding:5px;">Print</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function filterBookings() {
+            const query = document.getElementById('bookingSearch').value.toLowerCase();
+            const filtered = window.allBookings.filter(b => 
+                (b.booking_id && b.booking_id.toLowerCase().includes(query)) ||
+                (b.guest_name && b.guest_name.toLowerCase().includes(query)) ||
+                (b.check_in && b.check_in.toLowerCase().includes(query)) ||
+                (b.check_out && b.check_out.toLowerCase().includes(query)) ||
+                (b.whatsapp && b.whatsapp.toLowerCase().includes(query)) ||
+                (b.booking_status && b.booking_status.toLowerCase().includes(query))
+            );
+            renderBookings(filtered);
+        }
+
+        async function saveSetting(id) {
+            const value = document.getElementById(`val-${id}`).innerText;
+            await _supabase.from('settings').update({ value }).eq('id', id);
+            alert("Setting updated!");
+            loadAdminData();
+        }
+
+        async function addRoom() {
+            const id = document.getElementById('newRoomId').value;
+            const type = document.getElementById('newRoomType').value;
+            const price = document.getElementById('newRoomPrice').value;
+            const amenities = document.getElementById('newRoomAmenities').value;
+            await _supabase.from('rooms').insert([{ id, type, price, amenities }]);
+            loadAdminData();
+        }
+
+        async function saveRoom(id) {
+            const type = document.getElementById(`rtype-${id}`).innerText;
+            const price = document.getElementById(`rprice-${id}`).innerText;
+            const amenities = document.getElementById(`ramenities-${id}`).innerText;
+            await _supabase.from('rooms').update({ type, price, amenities }).eq('id', id);
+            alert("Room updated!");
+        }
+
+        async function deleteRoom(id) {
+            if(confirm("Delete room?")) {
+                await _supabase.from('rooms').delete().eq('id', id);
+                loadAdminData();
+            }
+        }
+        
+        async function saveBooking(id) {
+            const guest_name = document.getElementById(`guest-${id}`).innerText;
+            const check_in = document.getElementById(`checkin-${id}`).innerText;
+            const check_out = document.getElementById(`checkout-${id}`).innerText;
+            const room_id = document.getElementById(`room-${id}`).innerText;
+            const whatsapp = document.getElementById(`whatsapp-${id}`).innerText;
+            const price = document.getElementById(`price-${id}`).innerText;
+            const discount = document.getElementById(`discount-${id}`).innerText;
+            const advance = document.getElementById(`advance-${id}`).innerText;
+            const requests = document.getElementById(`extra-${id}`).innerText;
+            const booking_status = document.getElementById(`status-${id}`).innerText;
+
+            await _supabase.from('bookings').update({ 
+                guest_name, check_in, check_out, room_id, whatsapp, price, discount, advance, requests, booking_status 
+            }).eq('id', id);
+            alert("Booking updated successfully!");
+        }
+
+        async function deleteBooking(id) {
+            if(confirm("Are you sure?")) {
+                await _supabase.from('bookings').delete().eq('id', id);
+                loadAdminData();
+            }
+        }
+        
+        async function printInvoice(id) {
+            const b = window.allBookings.find(x => x.id === id);
+            if (!b) return;
+            
+            // Get all bookings with the same booking_id to combine totals
+            const group = window.allBookings.filter(x => x.booking_id === b.booking_id);
+            const totalInclGST = group.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0);
+            const advance = group.reduce((acc, curr) => acc + (parseFloat(curr.advance) || 0), 0);
+            const discount = group.reduce((acc, curr) => acc + (parseFloat(curr.discount) || 0), 0);
+            const gst_p = parseFloat(window.gst_percent) || 0;
+            
+            // Base Price = Total / (1 + GST_PERCENT/100)
+            // GST Amount = Total - Base Price
+            const baseTotal = totalInclGST / (1 + gst_p / 100);
+            const gst_amt = totalInclGST - baseTotal;
+
+            const printWin = window.open('invoice_template.html', '_blank');
+            printWin.onload = () => {
+                printWin.document.getElementById('guest_name').innerText = b.guest_name;
+                printWin.document.getElementById('whatsapp').innerText = b.whatsapp;
+                printWin.document.getElementById('booking_id').innerText = b.booking_id;
+                printWin.document.getElementById('check_in').innerText = b.check_in;
+                printWin.document.getElementById('check_out').innerText = b.check_out;
+                printWin.document.getElementById('room_desc').innerText = `Room(s): ${group.map(x=>x.room_id).join(', ')}`;
+                printWin.document.getElementById('gst_percent').innerText = gst_p;
+                printWin.document.getElementById('gst_amount').innerText = gst_amt.toFixed(2);
+                printWin.document.getElementById('gst_number').innerText = window.gst_number;
+                printWin.document.getElementById('price').innerText = (totalInclGST - discount).toFixed(2);
+                printWin.document.getElementById('discount').innerText = discount;
+                printWin.document.getElementById('advance').innerText = advance;
+                const grandTotal = totalInclGST - discount;
+                printWin.document.getElementById('grand_total').innerText = grandTotal.toFixed(2);
+                printWin.document.getElementById('balance').innerText = (grandTotal - advance).toFixed(2);
+                
+                // Add Status with color
+                const status = b.booking_status || 'Pending';
+                const statusDiv = printWin.document.createElement('h2');
+                statusDiv.innerText = "Status: " + status;
+                
+                // Explicit color mapping using case-insensitive check
+                const s = status.toLowerCase();
+                let color = 'black';
+                if (s === 'confirmed') color = 'green';
+                else if (s === 'cancelled') color = 'red';
+                else if (s === 'pending') color = '#b8860b'; // Dark Goldenrod (Yellow)
+                else if (s === 'complete') color = 'blue';
+                
+                statusDiv.style.color = color;
+                printWin.document.body.insertBefore(statusDiv, printWin.document.body.firstChild);
+                
+                setTimeout(() => printWin.print(), 500);
+            };
+        }
+        
+        window.onload = loadAdminData;
+    </script>
+</body>
+</html>
