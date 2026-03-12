@@ -8,6 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { padding: 10px; text-align: left; max-width: 100%; margin: auto; font-size: 14px; }
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .login-box { padding: 20px; border: 1px solid #d4af37; border-radius: 10px; }
         .admin-card { background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #d4af37; overflow-x: auto; }
         h2 { color: #d4af37; font-size: 1.2rem; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
@@ -22,6 +24,16 @@
     </style>
 </head>
 <body>
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2>Admin Login</h2>
+            <input type="text" id="user" placeholder="Username"><br><br>
+            <input type="password" id="pass" placeholder="Password"><br><br>
+            <button class="btn-save" onclick="checkLogin()">Login</button>
+        </div>
+    </div>
+    
+    <div id="mainContent" style="display:none;">
     <h1>Admin Dashboard</h1>
     
     <div class="admin-card">
@@ -34,7 +46,7 @@
             <tbody id="bookingsBody"></tbody>
         </table>
     </div>
-
+    
     <div class="admin-card">
         <h2>Website Content</h2>
         <table>
@@ -66,9 +78,16 @@
             <button class="btn-save" onclick="addRoom()">Add Room</button>
         </div>
     </div>
+    </div>
 
     <script>
         const _supabase = window.supabase.createClient('https://tuyxkirgobnvacmjilsz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1eXhraXJnb2JudmFjbWppbHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMzQ5MDgsImV4cCI6MjA4ODgxMDkwOH0.2WU369DWbHlcRhPtF4X8jWT4cQw2mGP8JPb0KVlNNq4');
+
+        // Add an immediate check to ensure content is hidden on load
+        document.addEventListener("DOMContentLoaded", () => {
+             document.getElementById('loginOverlay').style.display = 'flex';
+             document.getElementById('mainContent').style.display = 'none';
+        });
 
         async function loadAdminData() {
             const { data: settings } = await _supabase.from('settings').select('*');
@@ -151,6 +170,13 @@
             alert("Setting updated!");
             loadAdminData();
         }
+        
+        async function addSetting() {
+            const key = document.getElementById('newSettingKey').value;
+            const value = document.getElementById('newSettingValue').value;
+            await _supabase.from('settings').insert([{ key, value }]);
+            loadAdminData();
+        }
 
         async function addRoom() {
             const id = document.getElementById('newRoomId').value;
@@ -198,6 +224,16 @@
             if(confirm("Are you sure?")) {
                 await _supabase.from('bookings').delete().eq('id', id);
                 loadAdminData();
+            }
+        }
+        
+        function checkLogin() {
+            if (document.getElementById('user').value === 'admin' && document.getElementById('pass').value === 'admin1@6') {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                loadAdminData();
+            } else {
+                alert('Invalid credentials');
             }
         }
         
@@ -254,8 +290,4 @@
                 setTimeout(() => printWin.print(), 500);
             };
         }
-        
-        window.onload = loadAdminData;
     </script>
-</body>
-</html>
