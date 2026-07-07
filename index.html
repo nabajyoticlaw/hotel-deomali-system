@@ -15,10 +15,6 @@
         section { min-height: 80vh; padding: 100px 5% 50px; }
         #map { height: 400px; width: 100%; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 20px; }
         .map-label { background: rgba(255, 255, 255, 0.8); border: 1px solid #ccc; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; color: #333; }
-        .booking-step { display: none; }
-        .booking-step.active { display: block; }
-        .room-card { border: 1px solid #d4af37; padding: 15px; margin: 10px 0; cursor: pointer; border-radius: 5px; transition: all 0.3s; }
-        .selected { background-color: #d4af37; color: #000; border-color: #000; }
         
         /* Navigation Buttons Style */
         .nav-btn-round { 
@@ -33,7 +29,7 @@
             border: 1px solid #d4af37; background: #000; 
             color: #d4af37; cursor: pointer;
             text-transform: uppercase; font-weight: 600;
-            margin: 10px 0;
+            margin: 10px 0; text-decoration: none; display: inline-block;
         }
         .action-btn:hover { background: #d4af37; color: #000; }
         .contact-actions { display: flex; justify-content: center; gap: 30px; margin-top: 2rem; flex-wrap: wrap; }
@@ -44,6 +40,12 @@
         /* Form accessibility improvements */
         label { display: block; margin-top: 15px; font-weight: 600; }
         input, textarea { width: 100%; max-width: 100%; box-sizing: border-box; }
+
+        /* Hero Button Link Fix */
+        .hero-cta {
+            text-decoration: none;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -73,14 +75,17 @@
         <button onclick="moveCarousel(1)" class="carousel-nav next">❯</button>
         <div class="hero-overlay">
             <h2 class="hero-title" id="hero-title">Experience Unmatched Luxury</h2>
-            <button onclick="document.getElementById('booking').scrollIntoView()" class="hero-cta">Book Now</button>
+            <!-- Replaced Hero Button with Link -->
+            <a href="https://script.google.com/macros/s/AKfycby9koff6aLjZTeG0Vz1Uq1EaZ8cswJ97QKSQYENlrV6oNtungicftG7yqnj1V6oPpmP/exec" target="_blank" class="hero-cta">
+                <button class="action-btn" style="margin:0;">Book Now</button>
+            </a>
         </div>
     </section>
 
     <section id="about">
         <h2>About Our Luxury Stay</h2>
         <div class="content-container">
-            <p >Welcome to <strong>Hotel Deomali</strong>, a sanctuary of comfort and safety in the heart of Kunduli, Hatapada.</p>
+            <p>Welcome to <strong>Hotel Deomali</strong>, a sanctuary of comfort and safety in the heart of Kunduli, Hatapada.</p>
             <p>Our guests consistently praise our excellent service, friendly staff, and commitment to maintaining a clean and secure atmosphere.</p>
             <div class="highlights">
                 <div><span>✨</span><br>Friendly Service</div>
@@ -90,48 +95,13 @@
         </div>
     </section>
 
-    <section id="booking">
+    <!-- Simplified Booking Section -->
+    <section id="booking" style="text-align: center;">
         <h2>Book Your Room</h2>
-        <div id="step-dates" class="booking-step active">
-            <label>Check-in:</label> <input type="date" id="checkin">
-            <label>Check-out:</label> <input type="date" id="checkout">
-            <button id="findRoomsBtn" class="action-btn">Check Availability</button>
-        </div>
-        <div id="step-rooms" class="booking-step">
-            <h3>Available Rooms</h3>
-            <div id="rooms-list"></div>
-            <div class="booking-actions" style="display:flex; justify-content:center; align-items:center; gap:20px; width:100%; margin-top:20px;">
-                <button class="action-btn" onclick="showStep('step-dates')">← Back</button>
-                <button id="proceedBtn" class="action-btn">Continue →</button>
-            </div>
-        </div>
-        <div id="step-details" class="booking-step">
-            <h3>Guest Details:</h3>
-            <label for="guestName">Name:</label><input type="text" id="guestName" placeholder="Full Name" required>
-            <label for="guestCount">Persons:</label><input type="number" id="guestCount" placeholder="Number of Persons" max="4" min="1" required>
-            <label for="guestAge">Age:</label><input type="number" id="guestAge" placeholder="Lead Guest Age" required>
-            <label for="whatsapp">WhatsApp:</label><input type="tel" id="whatsapp" placeholder="91XXXXXXXXXX" pattern="[0-9]{10,12}" title="Enter 10-12 digit WhatsApp number" required>
-            <label for="requests">Requests:</label><textarea id="requests" placeholder="Extra requests"></textarea>
-            <div class="booking-actions" style="display:flex; justify-content:center; align-items:center; gap:20px; width:100%; margin-top:20px;">
-                <button class="action-btn" onclick="showStep('step-rooms')">← Back</button>
-                <button id="nextToPaymentBtn" class="action-btn">Continue to Payment →</button>
-            </div>
-        </div>
-        <div id="step-payment" class="booking-step">
-            <h3>Payment</h3>
-            <div id="payment-summary"></div>
-            <p>Your booking is pending payment.</p>
-            <p>Booking will be confirmed only after payment.</p>
-            <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
-                <button class="action-btn" onclick="window.open('https://wa.me/919827331166', '_blank')">WhatsApp Admin</button>
-                <button class="action-btn" onclick="window.location.href='upi://pay?pa=8249649395@ibl&pn=HotelDeomali'">Pay via UPI</button>
-            </div>
-            <div class="booking-actions" style="display:flex; justify-content:center; align-items:center; gap:20px; width:100%; margin-top:20px;">
-                <button class="action-btn" onclick="showStep('step-details')">← Back</button>
-                <button id="confirmBookingBtn" class="action-btn">Confirm Request</button>
-            </div>
-        </div>
-        <div id="status" style="margin-top: 10px; font-weight: bold;"></div>
+        <p style="margin-bottom: 20px;">Ready for your stay? Click below to proceed with your booking.</p>
+        <a href="https://script.google.com/macros/s/AKfycby9koff6aLjZTeG0Vz1Uq1EaZ8cswJ97QKSQYENlrV6oNtungicftG7yqnj1V6oPpmP/exec" target="_blank" class="action-btn">
+            Proceed to Booking
+        </a>
     </section>
 
 
@@ -167,6 +137,7 @@
     </section>
 
     <script>
+        // Map Logic
         const map = L.map('map', { zoomControl: true, dragging: true, scrollWheelZoom: false }).setView([18.5963, 82.9061], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
         const spots = [
@@ -183,12 +154,14 @@
         });
     </script>
 
-<script src="booking.js"></script>
-</body>
-</html>    <script>
+    <!-- Removed booking.js as requested -->
+
+    <script>
+        // Supabase & Carousel Logic
         const _mySupabase = window.mySupabaseClient || supabase.createClient("https://tuyxkirgobnvacmjilsz.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1eXhraXJnb2JudmFjbWppbHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMzQ5MDgsImV4cCI6MjA4ODgxMDkwOH0.2WU369DWbHlcRhPtF4X8jWT4cQw2mGP8JPb0KVlNNq4");
         const carouselImages = document.getElementById("carousel-images");
         var currentIdx = 0;
+
         async function initCarousel() {
             const { data } = await _mySupabase.from("gallery").select("image_url");
             if (!data) return;
@@ -205,6 +178,7 @@
             if (window.carouselInterval) clearInterval(window.carouselInterval);
             window.carouselInterval = setInterval(() => moveCarousel(1), 6000);
         }
+
         function moveCarousel(dir) {
             const slides = document.querySelectorAll(".carousel-slide");
             if (slides.length === 0) return;
@@ -212,6 +186,7 @@
             currentIdx = (currentIdx + dir + slides.length) % slides.length;
             slides[currentIdx].classList.add("active");
         }
+
         async function loadDynamicContent() {
             const { data: settings } = await _mySupabase.from('settings').select('*');
             if (settings) {
@@ -222,6 +197,9 @@
                 });
             }
         }
+
         initCarousel();
         loadDynamicContent();
     </script>
+</body>
+</html>
